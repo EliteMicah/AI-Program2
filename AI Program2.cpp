@@ -46,6 +46,9 @@ vector<nodeType> uniform_cost_search_Nav(navigationGraph g1, int start, int goal
 //A* search between two nodes, returns a path
 vector<nodeType> astar_search_Nav(navigationGraph g1, int start, int goal); 
 
+// Find heuristic
+int getH2(int, int);
+
 
 int main() {
 
@@ -82,7 +85,6 @@ int main() {
 		// Inserting the state? into the vector of int's for A* search
 		for (auto &x : pathAstar)
 			pa.insert(pa.begin(), x.state);
-
 
 		cout << setw(5) << " ";
 
@@ -199,194 +201,122 @@ vector<nodeType> Solution(int currentId, int startId, map<int, nodeType> explore
 
 // Uniform cost search between two nodes, returns a path
 vector<nodeType> uniform_cost_search_Nav(navigationGraph g1, int start, int goal) {
-	nodeType begin = { start, -1, 0.0, 0.0 }; // Initialize the starting node
 
-	// Use priority queue for the frontier
-	priority_queue<nodeType> frontier;
-	frontier.push(begin);
+	// Starting node
+	// Start
+	// -1 = parent
+	// 0 = g(n), path cost so far
+	// 0 = h(n), estimated cost by heuristic from present to goal
+	nodeType startNode = { start, -1, 0, 0 };
 
-	// Use a map to track explored nodes and their details
-	map<int, nodeType> reached;
-	reached[start] = begin;
+	vector<nodeType> path;
+	priority_queue<nodeType> frontier; //for A* the frontier is a priority queue
 
+	//initialize the frontier with the start node
+	frontier.push(startNode);
+
+	//The set of all nodes already explored
+	map<int, nodeType> reached; 
+	reached[start] = startNode;
+
+	// Cycle through the frontier
 	while (!frontier.empty()) {
+
+		// Place current at top and pop
 		nodeType curr = frontier.top();
 		frontier.pop();
 
-		// Check if the goal is reached
+		// Check if goal is reached, return solution if true
 		if (curr.state == goal) {
-			// Return the solution path
+			reached[goal] = curr;
 			return Solution(goal, start, reached);
 		}
 
-		// Expand the current node and explore its children
+		// Find all the possible children
 		vector<nodeType> children = Expand(curr, g1);
-		for (const auto& x : children) {
-			// Check if the x state has not been explored or has a lower cost
-			if (reached.find(x.state) == reached.end() ||
-				x.costG < reached[x.state].costG) {
-				// Add x to the frontier and explored nodes
+		for (auto& x : children) {
+
+			// Check if the child state has not been explored or has a lower costG
+			if ((reached.find(x.state) == reached.end()) || (reached[x.state].costG > x.costG)) {
+
+				// Update frontier and reached
 				frontier.push(x);
 				reached[x.state] = x;
 			}
 		}
 	}
 
-	// If no solution is found, return an empty path.
-	return {};
+	return path;
 }
-
 
 //A* search between two nodes, returns a path
 vector<nodeType> astar_search_Nav(navigationGraph g1, int start, int goal) {
-	/*
-	nodeType begin = { start, -1, 0.0, 0.0 }; // Initialize the starting node.
+	
+	vector<nodeType> path;
+	priority_queue<nodeType> frontier; //for A* the frontier is a priority queue
+	nodeType startNode = { start, -1, 0, 0 }; //initialize the start node
+	// Idk if costH needs to be = getH2(start, goal)
+	// Doesn't seem to change anything if I do that 
 
-	// Use priority queue for the frontier.
-	priority_queue<nodeType> frontier;
-	frontier.push(begin);
+	//initialize the frontier with the start node
+	frontier.push(startNode); 
 
-	// Use a map to track explored nodes and their details.
-	map<int, nodeType> reached;
-	reached[start] = begin;
+	map<int, nodeType> reached; //The set of all nodes already explored
+	reached[start] = startNode;
 
+	// Cycle through the frontier
 	while (!frontier.empty()) {
-		nodeType curr = frontier.top();
+
+		// Place current at top and pop
+		nodeType curr = frontier.top(); 
 		frontier.pop();
 
-		// Check if the goal is reached.
+		// Check if goal is reached, return solution if true
 		if (curr.state == goal) {
-			// Return the solution path.
+			reached[goal] = curr;
 			return Solution(goal, start, reached);
 		}
 
-		// Expand the current node and explore its children.
+		// Find all the possible children
 		vector<nodeType> children = Expand(curr, g1);
-		for (const auto& child : children) {
-			// Calculate the heuristic cost (costH) here. Modify as needed.
-			// For example, you can use the Euclidean distance between the child and goal.
+		for (auto &x : children) {
 
-			double heuristicCost = sqrt(pow(g1.xloc[child.state] - g1.xloc[goal], 2) 
-				+ pow(g1.yloc[child.state] - g1.yloc[goal], 2));
+			// Check if the child state has not been explored or has a lower costG
+			if ((reached.find(x.state) == reached.end()) || (reached[x.state].costG > x.costG)) {
 
-			child.costH = heuristicCost;
+				// Check heuristic
+				x.costH = getH2(x.state, goal);
 
-			// Check if the child state has not been explored or has a lower costG.
-			if (reached.find(child.state) == reached.end() ||
-				(curr.costG + child.costG) < reached[child.state].costG) {
-				// Update child's costG with the sum of parent's costG and edge cost.
-				child.costG = curr.costG + child.costG;
-				// Add child to the frontier and explored nodes.
-				frontier.push(child);
-				reached[child.state] = child;
-			}
-		}
-	} */
-
-	// If no solution is found, return an empty path.
-	return {};
-}
-
-
-/*
-function BEST-FIRST-SEARCH(problem, f ) returns a solution node or failure
-	node ←NODE(STATE=problem.INITIAL)
-	frontier ←a priority queue ordered by f , with node as an element
-	reached ←a lookup table, with one entry with key problem.INITIAL and value node
-
-	while not IS-EMPTY(frontier) do
-		node ←POP(frontier )
-		if problem.IS-GOAL(node.STATE) then return SOLUTION(node)
-			for each child in EXPAND(problem, node) do
-				s←child.STATE
-				if s is not in reached or child.PATH-COST < reached[s].PATH-COST then
-					reached[s]←child
-					add child to frontier
-	return failure
-*/
-/*
-* Uniform-Cost Search
-nodeType begin = {}; // Need to set it to the problem
-
-	queue<nodeType> frontier; //Frontier is a queue for BFS
-	map<int, nodeType> reached; //Explored set implemented as STL map
-	reached[begin.state] = begin;
-	frontier.push(begin); //initialize the frontier with the start node
-
-	while (!frontier.empty()) {
-
-		//take next node from frontier
-		nodeType curr = frontier.front();
-		frontier.pop();
-
-		// Getting the children nodes
-		vector<nodeType> children = Expand(curr, g1);
-		for (auto x : children) {
-
-			// If goal is met, return the solution(int, int, map)
-			/*if (start == goal) {
-				return Solution()
-			}
-
-		}
-	}
-
-	return {};
-*/
-
-/*
-	vector<nodeType> path;
-	priority_queue<nodeType> frontier; //for A* the frontier is a priority queue
-	nodeType startNode; //initialize the start node
-
-	startNode.state = start;
-	startNode.costG = 0;
-	startNode.costH = g1(start, goal);
-
-	startNode.stateId = start;
-	startNode.parent = "-1";
-	startNode.action = -1;
-	startNode.costG = 0;
-	startNode.costH = getH2(start, goal);
-	frontier.push(startNode); //initialize the frontier with the start node
-
-	map<string, nodeType> reached; //The set of all nodes already explored
-	reached[start] = startNode;
-
-	while (!frontier.empty()) {
-		nodeType curr = frontier.top(); frontier.pop();
-
-		if (curr.stateId == goal) {
-			reached[goal] = curr;
-			return Solution(curr, reached);
-		}
-
-		vector<nodeType> children = Expand(curr);
-		for (auto x : children) {
-
-			if ((reached.find(x.stateId) == reached.end()) || (reached[x.stateId].costG > x.costG)) {
-				x.costH = getH2(x.stateId, goal);
+				// Update frontier and reached
 				frontier.push(x);
-				reached[x.stateId] = x;
+				reached[x.state] = x;
 			}
 		}
 	}
 
 	return path;
-*/
+}
 
-/*
-comment through the existing starter code
-go online and look for existing uniform-cost search functions
-go online and look for existing A* search functions
+// Finding Heuristic function
+int getH2(int X, int Y) {
 
-From the Book:
+	// Solution variable
+	int d = 0;
 
- UNIFORM-COST SEARCH expands the node with lowest path cost, and is
-	optimal for general action costs
+	for (int i = 0; i < 9; i++) {
+		int s = X;
+		int w = Y;
 
- A* SEARCH expands nodes with minimal f(n) = g(n) + h(n). A* is complete and
-	optimal, provided that h(n) is admissible. The space complexity of A* is still an issue for
-	many problems
+		// Heuristic search
+		if (s > 0) {
+			int x0 = s / 3; 
+			int x1 = s % 3;
+			int y0 = w / 3; 
+			int y1 = w % 3;
+			d += abs(x0 - y0) + abs(x1 - y1);
+		}
+	}
 
-*/
+	// Return solution
+	return d;
+}
